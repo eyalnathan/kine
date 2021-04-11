@@ -328,6 +328,9 @@ func (d *Generic) DeleteRevision(ctx context.Context, revision int64) error {
 func (d *Generic) ListCurrent(ctx context.Context, prefix string, limit int64, includeDeleted bool) (*sql.Rows, error) {
 	sql := d.GetCurrentSQL
 	labels, prefix, withLabels := kubernetes.ExtractLabels(prefix)
+	if strings.Contains(prefix, "accounts.cloud.sap.com") {
+		logrus.Infof("ListCurrent before, {sql,labels, limit, prefix} = {'%s', '%v', '%s'}", sql, labels, limit, prefix)
+	}
 	if withLabels {
 		sql = d.GetCurrentWithLabelSQL
 		logrus.Infof("ListCurrent WithLabels, {sql,labels} = {'%s', '%v'}", sql, labels)
@@ -343,8 +346,8 @@ func (d *Generic) ListCurrent(ctx context.Context, prefix string, limit int64, i
 }
 
 func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revision int64, includeDeleted bool) (*sql.Rows, error) {
-	labels, prefix, withLabels := kubernetes.ExtractLabels(prefix)
 	if startKey == "" {
+		labels, prefix, withLabels := kubernetes.ExtractLabels(prefix)
 		sql := d.ListRevisionStartSQL
 		if withLabels {
 			sql = d.ListRevisionStartWithLabelSQL
@@ -356,9 +359,13 @@ func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revi
 		if withLabels {
 			return d.query(ctx, sql, prefix, revision, d.ArrayTranslate(labels), includeDeleted)
 		}
+		if strings.Contains(prefix, "accounts.cloud.sap.com") {
+			logrus.Infof("ListCurrent before, {sql,labels, limit, prefix} = {'%s', '%v', '%s'}", sql, labels, limit, prefix)
+		}
 		return d.query(ctx, sql, prefix, revision, includeDeleted)
 	}
 
+	labels, startKey, withLabels := kubernetes.ExtractLabels(startKey)
 	sql := d.GetRevisionAfterSQL
 	if withLabels {
 		sql = d.GetRevisionAfterWithLabelsSQL
@@ -366,6 +373,9 @@ func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revi
 	}
 	if limit > 0 {
 		sql = fmt.Sprintf("%s LIMIT %d", sql, limit)
+	}
+	if strings.Contains(prefix, "accounts.cloud.sap.com") {
+		logrus.Infof("List after, {sql,labels, limit, startKey} = {'%s', '%v', '%s'}", sql, labels, limit, startKey)
 	}
 	if withLabels {
 		return d.query(ctx, sql, prefix, revision, startKey, revision, d.ArrayTranslate(labels), includeDeleted)

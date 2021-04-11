@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"log"
+	"net/http"
 	"os"
+
+	_ "net/http/pprof"
 
 	"github.com/k3s-io/kine/pkg/endpoint"
 	"github.com/rancher/wrangler/pkg/signals"
@@ -15,6 +19,10 @@ var (
 )
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	app := cli.NewApp()
 	app.Name = "kine"
 	app.Description = "Minimal etcd v3 API to support custom Kubernetes storage engines"
