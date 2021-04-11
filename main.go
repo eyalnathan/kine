@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -76,7 +77,9 @@ func main() {
 	app.Action = run
 
 	if err := app.Run(os.Args); err != nil {
-		logrus.Fatal(err)
+		if !errors.Is(err, context.Canceled) {
+			logrus.Fatal(err)
+		}
 	}
 }
 
