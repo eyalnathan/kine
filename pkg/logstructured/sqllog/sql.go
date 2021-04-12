@@ -278,8 +278,14 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 	}
 
 	if revision == 0 {
+		if strings.Contains(prefix, "accounts.cloud.sap.com") {
+			logrus.Infof("List (sql.go), before ListCurrent. prefix: %s, startKey: %s", prefix, startKey)
+		}
 		rows, err = s.d.ListCurrent(ctx, prefix, limit, includeDeleted)
 	} else {
+		if strings.Contains(prefix, "accounts.cloud.sap.com") {
+			logrus.Infof("List (sql.go), before List. prefix: %s, revision: %d, startKey: %s", prefix, revision, startKey)
+		}
 		rows, err = s.d.List(ctx, prefix, startKey, limit, revision, includeDeleted)
 	}
 	if err != nil {
@@ -293,6 +299,9 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 
 	if revision > 0 && len(result) == 0 {
 		// a zero length result won't have the compact revision so get it manually
+		if strings.Contains(prefix, "accounts.cloud.sap.com") {
+			logrus.Infof("List (sql.go), before GetCompactRevision. revision: $d", revision)
+		}
 		compact, err = s.d.GetCompactRevision(ctx)
 		if err != nil {
 			return 0, nil, err

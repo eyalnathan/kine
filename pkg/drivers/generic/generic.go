@@ -332,7 +332,7 @@ func (d *Generic) ListCurrent(ctx context.Context, prefix string, limit int64, i
 	sql := d.GetCurrentSQL
 	labels, prefix, withLabels := kubernetes.ExtractLabels(prefix)
 	if strings.Contains(prefix, "accounts.cloud.sap.com") {
-		logrus.Infof("ListCurrent before, {sql,labels, limit, prefix} = {'%s', '%v', '%s'}", sql, labels, limit, prefix)
+		logrus.Infof("ListCurrent before, {sql, labels, limit, prefix} = {'%s', '%v', '%d', '%s'}", sql, labels, limit, prefix)
 	}
 	if withLabels {
 		sql = d.GetCurrentWithLabelSQL
@@ -354,16 +354,15 @@ func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revi
 		sql := d.ListRevisionStartSQL
 		if withLabels {
 			sql = d.ListRevisionStartWithLabelSQL
-			logrus.Infof("ListRevisionStart WithLabels, {sql,labels} = {'%s', '%v'}", sql, labels)
 		}
 		if limit > 0 {
 			sql = fmt.Sprintf("%s LIMIT %d", sql, limit)
 		}
 		if withLabels {
+			if strings.Contains(prefix, "accounts.cloud.sap.com") {
+				logrus.Infof("ListRevisionStartWithLabelSQL, {labels, limit, prefix, sql} = {'%v', '%d', '%s', '%s'}", labels, limit, prefix, Stripped(sql))
+			}
 			return d.query(ctx, sql, prefix, revision, d.ArrayTranslate(labels), includeDeleted)
-		}
-		if strings.Contains(prefix, "accounts.cloud.sap.com") {
-			logrus.Infof("ListCurrent before, {sql,labels, limit, prefix} = {'%s', '%v', '%s'}", sql, labels, limit, prefix)
 		}
 		return d.query(ctx, sql, prefix, revision, includeDeleted)
 	}
@@ -372,15 +371,15 @@ func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revi
 	sql := d.GetRevisionAfterSQL
 	if withLabels {
 		sql = d.GetRevisionAfterWithLabelsSQL
-		logrus.Infof("ListRevisionAfter WithLabels, {sql,labels} = {'%s', '%v'}", sql, labels)
+		logrus.Infof("ListRevisionAfter WithLabels, {sql,labels} = {'%s', '%v'}", Stripped(sql), labels)
 	}
 	if limit > 0 {
 		sql = fmt.Sprintf("%s LIMIT %d", sql, limit)
 	}
-	if strings.Contains(prefix, "accounts.cloud.sap.com") {
-		logrus.Infof("List after, {sql,labels, limit, startKey} = {'%s', '%v', '%s'}", sql, labels, limit, startKey)
-	}
 	if withLabels {
+		if strings.Contains(prefix, "accounts.cloud.sap.com") {
+			logrus.Infof("GetRevisionAfterWithLabelsSQL, {labels, limit, prefix, startKey, sql} = {'%v', '%d', '%s', '%s', '%s'}", labels, limit, prefix, startKey, Stripped(sql))
+		}
 		return d.query(ctx, sql, prefix, revision, startKey, revision, d.ArrayTranslate(labels), includeDeleted)
 	}
 	return d.query(ctx, sql, prefix, revision, startKey, revision, includeDeleted)
