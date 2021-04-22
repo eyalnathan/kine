@@ -32,15 +32,14 @@ var (
 		WHERE crkv.name = 'compact_rev_key'`
 
 	withLabels = `
-	    AND
-		mkv.labels @> ?`
+		kv.labels @> ? AND`
 
 	idOfKey = `
 		AND
 		mkv.id <= ? AND
 		mkv.id > (
 			SELECT MAX(ikv.id) AS id
-			FROM kine AS ikv
+			FROM kine_max_revision AS ikv
 			WHERE
 				ikv.name = ? AND
 				ikv.id <= ?)`
@@ -51,15 +50,15 @@ var (
 			SELECT (%s), (%s), %s
 			FROM kine AS kv
 			JOIN (
-				SELECT MAX(mkv.id) AS id
-				FROM kine AS mkv
+				SELECT mkv.id
+                FROM kine_max_revision AS mkv
 				WHERE
 					mkv.name LIKE ?
 					%%s
-				GROUP BY mkv.name) maxkv
+			) maxkv
 		    ON maxkv.id = kv.id
 			WHERE
-				  (kv.deleted = 0 OR ?)
+				  %%s (kv.deleted = 0 OR ?) 
 		) as t
 		ORDER BY t.theid ASC
 		`, revSQL, compactRevSQL, columns)
@@ -214,18 +213,18 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 			FROM kine AS kv
 			WHERE kv.id = ?`, columns), paramCharacter, numbered),
 
-		GetCurrentSQL:                 q(fmt.Sprintf(listSQL, ""), paramCharacter, numbered),
-		GetCurrentWithLabelSQL:        q(fmt.Sprintf(listSQL, withLabels), paramCharacter, numbered),
-		ListRevisionStartSQL:          q(fmt.Sprintf(listSQL, "AND mkv.id <= ?"), paramCharacter, numbered),
-		ListRevisionStartWithLabelSQL: q(fmt.Sprintf(listSQL, "AND mkv.id <= ? "+withLabels), paramCharacter, numbered),
-		GetRevisionAfterSQL:           q(fmt.Sprintf(listSQL, idOfKey), paramCharacter, numbered),
-		GetRevisionAfterWithLabelsSQL: q(fmt.Sprintf(listSQL, idOfKey+" "+withLabels), paramCharacter, numbered),
+		GetCurrentSQL:                 q(fmt.Sprintf(listSQL, "", ""), paramCharacter, numbered),
+		GetCurrentWithLabelSQL:        q(fmt.Sprintf(listSQL, "", withLabels), paramCharacter, numbered),
+		ListRevisionStartSQL:          q(fmt.Sprintf(listSQL, "AND mkv.id <= ?", ""), paramCharacter, numbered),
+		ListRevisionStartWithLabelSQL: q(fmt.Sprintf(listSQL, "AND mkv.id <= ? ", withLabels), paramCharacter, numbered),
+		GetRevisionAfterSQL:           q(fmt.Sprintf(listSQL, idOfKey, ""), paramCharacter, numbered),
+		GetRevisionAfterWithLabelsSQL: q(fmt.Sprintf(listSQL, idOfKey, withLabels), paramCharacter, numbered),
 
 		CountSQL: q(fmt.Sprintf(`
 			SELECT (%s), COUNT(c.theid)
 			FROM (
 				%s
-			) c`, revSQL, fmt.Sprintf(listSQL, "")), paramCharacter, numbered),
+			) c`, revSQL, fmt.Sprintf(listSQL, "", "")), paramCharacter, numbered),
 
 		AfterSQL: q(fmt.Sprintf(`
 			SELECT (%s), (%s), %s

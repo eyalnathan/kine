@@ -42,6 +42,35 @@ var (
 		`CREATE INDEX IF NOT EXISTS kine_prev_revision_index ON kine (prev_revision)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS kine_name_prev_revision_uindex ON kine (name, prev_revision)`,
 		`CREATE INDEX IF NOT EXISTS kine_labels_index  ON kine USING gin (labels)`,
+
+		`CREATE TABLE IF NOT EXISTS kine_max_revision 
+			(
+				id INTEGER PRIMARY KEY,
+				name VARCHAR(630)
+			);`,
+
+		`CREATE UNIQUE INDEX IF NOT EXISTS kine_max_revision_name_index ON kine_max_revision (name)`,
+		`CREATE INDEX IF NOT EXISTS kine_max_revision_name_id_index ON kine_max_revision (name,id)`,
+
+		`CREATE OR REPLACE FUNCTION max_revision() RETURNS TRIGGER AS 
+			$BODY$
+			BEGIN
+				INSERT INTO
+					kine_max_revision(id,name)
+				VALUES(new.id,new.name)
+				ON CONFLICT (name)
+					DO
+					UPDATE SET id = new.id;
+				RETURN new;
+			END;
+			$BODY$
+				language plpgsql`,
+
+		`BEGIN;
+         DROP TRIGGER IF EXISTS max_revision_trigger ON kine;
+         CREATE TRIGGER max_revision_trigger AFTER INSERT ON kine FOR EACH ROW EXECUTE PROCEDURE max_revision();
+		 COMMIT;
+		 END;`,
 	}
 	createDB = "CREATE DATABASE "
 )
