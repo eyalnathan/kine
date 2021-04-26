@@ -32,3 +32,15 @@ func ExtractLabels(key string) (labels []string, returnedKey string, keyModified
 	logrus.Infof("Extracted labels: %s from key %s", parts[1], parts[2])
 	return strings.Split(parts[1], "%"), parts[2], true
 }
+
+func GetLabelsPrefix(key string) string {
+	if !strings.Contains(key, "@") {
+		return ""
+	}
+	parts := strings.Split(key, "@")
+	if len(parts) == 1 {
+		return ""
+	}
+	logrus.Infof("Label prefix: %s from key %s", parts[1], key)
+	return "@" + parts[1] + "@"
+}
