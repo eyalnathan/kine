@@ -32,7 +32,8 @@ var (
 		WHERE crkv.name = 'compact_rev_key'`
 
 	withLabels = `
-		kv.labels @> ? AND`
+	    AND
+		mkv.labels @> ?`
 
 	idOfKey = `
 		AND
@@ -58,7 +59,7 @@ var (
 			) maxkv
 		    ON maxkv.id = kv.id
 			WHERE
-				  %%s (kv.deleted = 0 OR ?) 
+				 (kv.deleted = 0 OR ?) 
 		) as t
 		ORDER BY t.theid ASC
 		`, revSQL, compactRevSQL, columns)
@@ -213,18 +214,18 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 			FROM kine AS kv
 			WHERE kv.id = ?`, columns), paramCharacter, numbered),
 
-		GetCurrentSQL:                 q(fmt.Sprintf(listSQL, "", ""), paramCharacter, numbered),
-		GetCurrentWithLabelSQL:        q(fmt.Sprintf(listSQL, "", withLabels), paramCharacter, numbered),
-		ListRevisionStartSQL:          q(fmt.Sprintf(listSQL, "AND mkv.id <= ?", ""), paramCharacter, numbered),
-		ListRevisionStartWithLabelSQL: q(fmt.Sprintf(listSQL, "AND mkv.id <= ? ", withLabels), paramCharacter, numbered),
-		GetRevisionAfterSQL:           q(fmt.Sprintf(listSQL, idOfKey, ""), paramCharacter, numbered),
-		GetRevisionAfterWithLabelsSQL: q(fmt.Sprintf(listSQL, idOfKey, withLabels), paramCharacter, numbered),
+		GetCurrentSQL:                 q(fmt.Sprintf(listSQL, ""), paramCharacter, numbered),
+		GetCurrentWithLabelSQL:        q(fmt.Sprintf(listSQL, withLabels), paramCharacter, numbered),
+		ListRevisionStartSQL:          q(fmt.Sprintf(listSQL, "AND mkv.id <= ?"), paramCharacter, numbered),
+		ListRevisionStartWithLabelSQL: q(fmt.Sprintf(listSQL, "AND mkv.id <= ? "+withLabels), paramCharacter, numbered),
+		GetRevisionAfterSQL:           q(fmt.Sprintf(listSQL, idOfKey), paramCharacter, numbered),
+		GetRevisionAfterWithLabelsSQL: q(fmt.Sprintf(listSQL, idOfKey+withLabels), paramCharacter, numbered),
 
 		CountSQL: q(fmt.Sprintf(`
 			SELECT (%s), COUNT(c.theid)
 			FROM (
 				%s
-			) c`, revSQL, fmt.Sprintf(listSQL, "", "")), paramCharacter, numbered),
+			) c`, revSQL, fmt.Sprintf(listSQL, "")), paramCharacter, numbered),
 
 		AfterSQL: q(fmt.Sprintf(`
 			SELECT (%s), (%s), %s

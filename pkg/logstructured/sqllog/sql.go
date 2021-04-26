@@ -281,6 +281,10 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 		if strings.Contains(prefix, "accounts.cloud.sap.com") {
 			logrus.Infof("List (sql.go), before ListCurrent. prefix: %s, startKey: %s", prefix, startKey)
 		}
+		labelPrefix := kubernetes.GetLabelsPrefix(startKey)
+		if len(labelPrefix) > 0 {
+			prefix = labelPrefix + prefix
+		}
 		rows, err = s.d.ListCurrent(ctx, prefix, limit, includeDeleted)
 	} else {
 		if strings.Contains(prefix, "accounts.cloud.sap.com") {

@@ -46,21 +46,23 @@ var (
 		`CREATE TABLE IF NOT EXISTS kine_max_revision 
 			(
 				id INTEGER PRIMARY KEY,
-				name VARCHAR(630)
+				name VARCHAR(630),
+				labels TEXT[]
 			);`,
 
 		`CREATE UNIQUE INDEX IF NOT EXISTS kine_max_revision_name_index ON kine_max_revision (name)`,
 		`CREATE INDEX IF NOT EXISTS kine_max_revision_name_id_index ON kine_max_revision (name,id)`,
+		`CREATE INDEX IF NOT EXISTS kine_max_revision_labels_index  ON kine USING gin (labels)`,
 
 		`CREATE OR REPLACE FUNCTION max_revision() RETURNS TRIGGER AS 
 			$BODY$
 			BEGIN
 				INSERT INTO
-					kine_max_revision(id,name)
-				VALUES(new.id,new.name)
+					kine_max_revision(id,name,labels)
+				VALUES(new.id,new.name,new.labels)
 				ON CONFLICT (name)
 					DO
-					UPDATE SET id = new.id;
+					UPDATE SET id = new.id, labels = new.labels;
 				RETURN new;
 			END;
 			$BODY$
